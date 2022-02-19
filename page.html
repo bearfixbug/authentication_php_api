@@ -12,6 +12,14 @@
     <div class="container">
         <br>
         <h1 id="welcome">Welcome</h1>
+
+        <br><br>
+        <h2>Own product</h2>
+        <div id="boxproduct" class="d-flex">
+            
+        </div>
+
+        <br>
         
         <button onclick="gotologout()" class="btn btn-danger">Logout!</button>
     </div>
@@ -20,7 +28,62 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
     <script>
-        $("#welcome").text('Welcome! ' + localStorage.fullname)
+
+        $(document).ready(() => {
+            $("#welcome").text('Welcome! ' + localStorage.fullname)
+
+            $.ajax({
+                method: 'post',
+                url: './api/checktoken.php',
+                data: {
+                    token: localStorage.token
+                }, success: (response) => {
+                    console.log('checktoken', response)
+                    if(response.RespCode == 400) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Token หมดอายุ',
+                            timer: 1000
+                        }).then(() => {
+                            localStorage.clear();
+                            window.location.href = './index.html'
+                        })
+                    }
+                }, error: function(err) {
+                    console.log('err', err)
+                }
+            })
+
+            $.ajax({
+                method: 'post',
+                url: './api/getownproduct.php',
+                data: {
+                    token: localStorage.token
+                }, success: (response) => {
+                    console.log('good', response)
+                    if(response.RespCode == 200) { 
+                        var html = '';
+                        for(var i=0; i<response.Result.length; i++) {
+                            html += `
+                            <div class="card" style="width: 18rem;">
+                                <img src="${response.Result[i].image}" class="card-img-top">
+                                <div class="card-body">
+                                    <h5 class="card-title">${response.Result[i].name}</h5>
+                                </div>
+                            </div>
+                            `;
+                        }
+                        $("#boxproduct").html(html)
+                    }
+                    else if(response.RespCode == 400 & response.Log == 4) {
+                        $("#boxproduct").html(`<p>Not found product</p>`)
+
+                    }
+                }, error: function(err) {
+                    console.log('bad', err)
+                }
+            })
+        })
 
         function gotologout() {
             $.ajax({
